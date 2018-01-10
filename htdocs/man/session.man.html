@@ -1,0 +1,252 @@
+<html><head>
+<title>httpd::session - Tcl Web Server </title>
+</head>
+<! -- Generated from file '' by tcllib/doctools with format 'html'
+   -->
+<! -- Copyright &copy; 2003 Andreas Kupries &lt;andreas_kupries@users.sourceforge.net&gt;
+   -->
+<! -- CVS: $Id$ httpd::session.n
+   -->
+
+<body>
+<h1> httpd::session(n) 1.0  &quot;Tcl Web Server&quot;</h1>
+<h2><a name="name">NAME</a></h2>
+<p>
+<p> httpd::session - Session management
+
+
+
+
+<h2><a name="synopsis">SYNOPSIS</a></h2>
+<p>
+package require <b>httpd::session ?1.0?</b><br>
+<br><table border=1 width=100% cellspacing=0 cellpadding=0><tr            bgcolor=lightyellow><td bgcolor=lightyellow><table 0 width=100% cellspacing=0 cellpadding=0><tr valign=top ><td ><a href="#1"><b class='cmd'>Session_Create</b> <i class='arg'>type</i> ?<i class='arg'>isSafe</i>?</a></td></tr>
+<tr valign=top ><td ><a href="#2"><b class='cmd'>Session_CreateWithID</b> <i class='arg'>type id</i> ?<i class='arg'>isSafe</i>?</a></td></tr>
+<tr valign=top ><td ><a href="#3"><b class='cmd'>Session_Destroy</b> <i class='arg'>id</i></a></td></tr>
+<tr valign=top ><td ><a href="#4"><b class='cmd'>Session_Reap</b> <i class='arg'>age</i> ?<i class='arg'>type</i>?</a></td></tr>
+<tr valign=top ><td ><a href="#5"><b class='cmd'>Session_Match</b> <i class='arg'>querylist</i> ?<i class='arg'>type</i>? ?<i class='arg'>error_name</i>? ?<i class='arg'>isSafe</i>?</a></td></tr>
+<tr valign=top ><td ><a href="#6"><b class='cmd'>Session_Authorized</b> <i class='arg'>id</i></a></td></tr>
+<tr valign=top ><td ><a href="#7"><b class='cmd'>Session_Require</b> <i class='arg'>id tag</i></a></td></tr>
+<tr valign=top ><td ><a href="#8"><b class='cmd'>Session_Import</b> <i class='arg'>valid array</i> ?<i class='arg'>interp</i>?</a></td></tr>
+<tr valign=top ><td ><a href="#9"><b class='cmd'>Session_Session</b> <i class='arg'>arg</i></a></td></tr>
+<tr valign=top ><td ><a href="#10"><b class='cmd'>Session_Sequence</b> <i class='arg'>id</i></a></td></tr>
+<tr valign=top ><td ><a href="#11"><b class='cmd'>Session_Variable</b> <i class='arg'>id var</i> ?<i class='arg'>value</i>?</a></td></tr>
+<tr valign=top ><td ><a href="#12"><b class='cmd'>Session_Value</b> <i class='arg'>id var</i> ?<i class='arg'>default</i>?</a></td></tr>
+</table></td></tr></table>
+<h2><a name="description">DESCRIPTION</a></h2>
+<p>
+
+The package <strong>httpd::session</strong> implements session management
+for a tcl based web server.
+
+The basic idea is to implement a session as a safe slave interpreter
+that holds its state. Each session has a four-character ID, allowing
+around 128^4 different sessions, assuming the ASCII character set.
+
+<p>
+
+<em>Note:</em> This package does not care where a session id comes
+from. They can be provided through hidden form data, or through
+cookies, for example. This is in the area of responsibility of the
+code making use of the package.
+
+<h2><a name="publicapi">Public API</a></h2>
+<p>
+<p>
+
+<dl>
+
+<dt><a name="1"><b class='cmd'>Session_Create</b> <i class='arg'>type</i> ?<i class='arg'>isSafe</i>?</a><dd>
+
+
+Creates a new session and returns its ID. By default the
+interpreter created for the session is marked as save, but this
+can be deactivated by specifying <strong>false</strong> for <i class='arg'>isSafe</i>.
+
+<br><br>
+
+The <i class='arg'>type</i> determines what commands are available in the slave
+interpreter for the session: All commands in the master interpreter
+whose name begins with <strong><strong>type</strong>_</strong> are made available as
+aliases to the new slave. Inside of the slave the prefix
+
+<strong><strong>type</strong>_</strong> will be stripped off. Additional automatisms: If
+the first argument of the command is <strong>interp</strong> or <strong>session</strong>
+the alias command will automatically called with either the session
+interp or the session id. Note that the latter allows determination of
+the former.
+
+<br><br>
+
+Standard commands available to the seesion interpreter are:
+
+<br><br>
+<dl>
+<dt><b class='cmd'>session</b><dd>
+Returns the seesion id.
+
+<br><br>
+<dt><b class='cmd'>sequence</b><dd>
+Returns an increasing sequence number which can be used to chain
+together pages and detect bookmarks and &quot;backs&quot; that screw things up.
+
+<br><br>
+<dt><b class='cmd'>group</b><dd>
+Set or get the current session &quot;group&quot;. In the session interp a group
+is simply an array.
+
+<br><br>
+<dt><b class='cmd'>value</b><dd>
+Get a value from the current &quot;group&quot;, or a default value.
+
+</dl>
+
+
+<dt><a name="2"><b class='cmd'>Session_CreateWithID</b> <i class='arg'>type id</i> ?<i class='arg'>isSafe</i>?</a><dd>
+
+
+Like <b class='cmd'>Session_Create</b>, except that the <i class='arg'>id</i> is not randomly
+chosen, but specified by the caller.
+
+<br><br>
+<dt><a name="3"><b class='cmd'>Session_Destroy</b> <i class='arg'>id</i></a><dd>
+
+
+This command destroys the specified session.
+
+<br><br>
+<dt><a name="4"><b class='cmd'>Session_Reap</b> <i class='arg'>age</i> ?<i class='arg'>type</i>?</a><dd>
+
+
+This command destroys all sessions which have not been touched for at
+least <i class='arg'>age</i> seconds and are matching the <i class='arg'>type</i>. The latter is
+a regexp pattern and defaults to <strong>.*</strong>, i.e. everything matches.
+
+
+<br><br>
+<dt><a name="5"><b class='cmd'>Session_Match</b> <i class='arg'>querylist</i> ?<i class='arg'>type</i>? ?<i class='arg'>error_name</i>? ?<i class='arg'>isSafe</i>?</a><dd>
+
+
+Finds a session based on the form data which is stored in the
+dictionary <i class='arg'>query</i>. Assumes the existence of a form variable named
+<strong>session</strong>.
+
+<br><br>
+
+If the value of that variable is <strong>new</strong> a new session is
+created. If it is <strong>kill <strong>ID</strong></strong> the session with that id is
+destroyed. Else the value is used to look for an existing session. If
+a <i class='arg'>type</i> is specified the found session has to be of that type or
+an error will be thrown. If the session has a sequence number the
+system expects a form variable <strong>sequence</strong> and its value has
+to match.
+
+<br><br>
+
+<i class='arg'>error_name</i> is the name of the variable where an error message
+will be stored if something goes wrong. The last argument,
+
+<i class='arg'>isSafe</i> has the same meaning as for <b class='cmd'>Sequence_Create</b>.
+
+<br><br>
+
+The command returns the session id for the session, or the empty
+string if none could be found.
+	  
+<br><br>
+<dt><a name="6"><b class='cmd'>Session_Authorized</b> <i class='arg'>id</i></a><dd>
+
+
+This command returns the interpreter for the session having the
+specified <i class='arg'>id</i> and installs privileged aliases. If the session
+does not exist it will be created.
+
+<br><br>
+
+An authorized interpreter has two additional commands available
+to it:
+
+<br><br>
+<dl>
+<dt><b class='cmd'>require</b> <i class='arg'>tag</i><dd>
+Loads and initializes packages based on the <i class='arg'>tag</i>. Calls
+a command &quot;<i class='arg'>tag</i>_Init&quot; with the session array and returns
+its result as the HTML generated by this command.
+
+<br><br>
+<dt><b class='cmd'>exit</b><dd>
+Destroys the session.
+
+</dl>
+
+
+<dt><a name="7"><b class='cmd'>Session_Require</b> <i class='arg'>id tag</i></a><dd>
+
+
+See above, <b class='cmd'>Session_Authorized</b>. This implements the <b class='cmd'>require</b>
+command to load and initialize special packages in the session
+interpreter.
+
+
+<br><br>
+<dt><a name="8"><b class='cmd'>Session_Import</b> <i class='arg'>valid array</i> ?<i class='arg'>interp</i>?</a><dd>
+
+
+Imports the valid components of the <i class='arg'>array</i> in <i class='arg'>interp</i> as
+variables into the local scope. <i class='arg'>valid</i> is the name of an array
+whose keys are the valid components to import (prefix with a dash). If
+valid is the empty string all components of the array are imported.
+
+<br><br>
+
+If no <i class='arg'>interp</i> was specified the main interp is used as source.
+
+
+<br><br>
+<dt><a name="9"><b class='cmd'>Session_Session</b> <i class='arg'>arg</i></a><dd>
+
+
+Returns the argument. This implements the <b class='cmd'>session</b> command
+for session interpreters.
+
+
+<br><br>
+<dt><a name="10"><b class='cmd'>Session_Sequence</b> <i class='arg'>id</i></a><dd>
+
+
+Generates a sequence value and returns it. This implements the
+<b class='cmd'>sequence</b> command for session interpreters.
+
+
+<br><br>
+<dt><a name="11"><b class='cmd'>Session_Variable</b> <i class='arg'>id var</i> ?<i class='arg'>value</i>?</a><dd>
+
+
+Sets or gets data from the global state associated with the session
+interpreter. This is used to implement the <b class='cmd'>group</b> command for
+session interpreters.
+
+
+<br><br>
+<dt><a name="12"><b class='cmd'>Session_Value</b> <i class='arg'>id var</i> ?<i class='arg'>default</i>?</a><dd>
+
+
+Gets a value from the current group, or a default if the group does
+not have a component called <i class='arg'>var</i>. This implements the <b class='cmd'>value</b>
+command for session interpreters.
+
+</dl>
+
+
+
+<h2><a name="seealso">SEE ALSO</a></h2>
+<p>
+httpd, httpd::utils
+<h2><a name="keywords">KEYWORDS</a></h2>
+<p>
+sessions, web server
+<h2><a name="copyright">COPYRIGHT</a></h2>
+<p>
+Copyright &copy; 2003 Andreas Kupries &lt;andreas_kupries@users.sourceforge.net&gt;<br>
+</body></html>
+

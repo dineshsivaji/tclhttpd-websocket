@@ -1,0 +1,482 @@
+<html><head>
+<title>httpd::url - Tcl Web Server </title>
+</head>
+<! -- Generated from file '' by tcllib/doctools with format 'html'
+   -->
+<! -- Copyright &copy; 2003 Andreas Kupries &lt;andreas_kupries@users.sourceforge.net&gt;
+   -->
+<! -- CVS: $Id$ httpd::url.n
+   -->
+
+<body>
+<h1> httpd::url(n) 1.2  &quot;Tcl Web Server&quot;</h1>
+<h2><a name="name">NAME</a></h2>
+<p>
+<p> httpd::url - Url dispatching
+
+
+
+
+<h2><a name="synopsis">SYNOPSIS</a></h2>
+<p>
+package require <b>httpd::url ?1.2?</b><br>
+<br><table border=1 width=100% cellspacing=0 cellpadding=0><tr            bgcolor=lightyellow><td bgcolor=lightyellow><table 0 width=100% cellspacing=0 cellpadding=0><tr valign=top ><td ><a href="#1"><b class='cmd'>Url_Dispatch</b> <i class='arg'>sock</i></a></td></tr>
+<tr valign=top ><td ><a href="#2"><b class='cmd'>Url_DeferredDispatch</b> <i class='arg'>prefix suffix sock varname errmsg</i></a></td></tr>
+<tr valign=top ><td ><a href="#3"><b class='cmd'>Url_PostHook</b> <i class='arg'>sock length</i></a></td></tr>
+<tr valign=top ><td ><a href="#4"><b class='cmd'>Url_PrefixInstall</b> <i class='arg'>prefix command</i> (<i class='arg'>option value</i>)...</a></td></tr>
+<tr valign=top ><td ><a href="#5"><b class='cmd'>Url_PrefixRemove</b> <i class='arg'>prefix</i></a></td></tr>
+<tr valign=top ><td ><a href="#6"><b class='cmd'>Url_AccessInstall</b> <i class='arg'>proc</i></a></td></tr>
+<tr valign=top ><td ><a href="#7"><b class='cmd'>Url_AccessInstallPrepend</b> <i class='arg'>proc</i></a></td></tr>
+<tr valign=top ><td ><a href="#8"><b class='cmd'>Url_AccessUnInstall</b> <i class='arg'>proc</i></a></td></tr>
+<tr valign=top ><td ><a href="#9"><b class='cmd'>Url_PrefixMatch</b> <i class='arg'>url prefixVar suffixVar</i></a></td></tr>
+<tr valign=top ><td ><a href="#10"><b class='cmd'>Url_PrefixExists</b> <i class='arg'>prefix</i></a></td></tr>
+<tr valign=top ><td ><a href="#11"><b class='cmd'>Url_Handle</b> <i class='arg'>cmd sock</i></a></td></tr>
+<tr valign=top ><td ><a href="#12"><b class='cmd'>Url_UnCache</b> <i class='arg'>sock</i> ?<i class='arg'>force</i>?</a></td></tr>
+<tr valign=top ><td ><a href="#13"><b class='cmd'>Url_Unwind</b> <i class='arg'>sock ei ec</i></a></td></tr>
+<tr valign=top ><td ><a href="#14"><b class='cmd'>Url_PathCheck</b> <i class='arg'>urlsuffix</i></a></td></tr>
+<tr valign=top ><td ><a href="#15"><b class='cmd'>Url_DecodeQuery</b> <i class='arg'>query</i> (<i class='arg'>option</i> <i class='arg'>value</i>)...</a></td></tr>
+<tr valign=top ><td ><a href="#16"><b class='cmd'>Url_DecodeQueryOnly</b> <i class='arg'>query</i> (<i class='arg'>option</i> <i class='arg'>value</i>)...</a></td></tr>
+<tr valign=top ><td ><a href="#17"><b class='cmd'>Url_DecodeQuery_multipart/form-data</b> <i class='arg'>query qualifiers</i></a></td></tr>
+<tr valign=top ><td ><a href="#18"><b class='cmd'>Url_DecodeQuery_application/x-www-urlencoded</b> <i class='arg'>query qualifiers</i></a></td></tr>
+<tr valign=top ><td ><a href="#19"><b class='cmd'>Url_DecodeQuery_application/x-www-form-urlencoded</b> <i class='arg'>query qualifiers</i></a></td></tr>
+<tr valign=top ><td ><a href="#20"><b class='cmd'>Url_QuerySetup</b> <i class='arg'>sock</i></a></td></tr>
+<tr valign=top ><td ><a href="#21"><b class='cmd'>Url_ReadPost</b> <i class='arg'>sock varname</i></a></td></tr>
+<tr valign=top ><td ><a href="#22"><b class='cmd'>Url_DecodeMIMEField</b> <i class='arg'>type</i></a></td></tr>
+<tr valign=top ><td ><a href="#23"><b class='cmd'>Url_Decode</b> <i class='arg'>data</i></a></td></tr>
+<tr valign=top ><td ><a href="#24"><b class='cmd'>Url_Encode</b> <i class='arg'>string</i></a></td></tr>
+<tr valign=top ><td ><a href="#25"><b class='cmd'>Url_IsLinkToSelf</b> <i class='arg'>url</i></a></td></tr>
+</table></td></tr></table>
+<h2><a name="description">DESCRIPTION</a></h2>
+<p>
+
+The package <strong>httpd::url</strong> is a companion package to package
+<strong>httpd</strong> and required by it. It provides the database mapping
+from urls in http requests to the tcl commands implementing them, and
+the commands to manipulate said database.
+
+<p>
+
+The main concept of this package is the <em>domain</em>.  A domain is
+described by an url prefix and handled by single tcl command, the
+<em>domain handler</em>. In other words, a domain is an url tree,
+i.e. an url directory and all urls inside of that directory
+[*]. These urls are handled by the associated tcl command.
+
+<p>
+
+[*] There is one exception to this definition. It is possible,
+actually allowed, to define a domain whose url prefix is inside of
+another domain. All the urls in this sub-domain do <em>not</em> belong
+to the enclosing domain anymore.
+
+<p>
+
+
+<h2><a name="interfacetoprotocolengines">Interface to protocol engines</a></h2>
+<p>
+
+The commands in this section are called by the package <strong>httpd</strong>
+as part of the url dispatching process. They are public for use in
+implementations of the HTTP protocol different from <strong>httpd</strong>.
+
+<dl>
+
+<dt><a name="1"><b class='cmd'>Url_Dispatch</b> <i class='arg'>sock</i></a><dd>
+
+
+Dispatches the request currently waiting on the connection <i class='arg'>sock</i>
+to the associated domain handler. The http protocol engine has already
+read the HTTP headers and placed into the connection status
+ array. It may have read all posted data before invoking the domain
+handler. This is done if and only if requested by the domain.
+
+<br><br>
+
+Before the domain handler is invoked all registered access control
+callbacks are run. If any of them denies the request an http error
+reply is sent back and the domain handler is not invoked.
+
+
+<br><br>
+<dt><a name="2"><b class='cmd'>Url_DeferredDispatch</b> <i class='arg'>prefix suffix sock varname errmsg</i></a><dd>
+
+
+Bare bones invocation of the domain handler for the url (<i class='arg'>prefix</i>
+and <i class='arg'>suffix</i>) in the current request waiting on the connection
+<i class='arg'>sock</i>. Executed after all posted data was read by this
+package. If the error message in <i class='arg'>errmssg</i> is not empty the
+request will be aborted, using this message in the generated http
+error reply, and the domain handler is not invoked.
+
+<br><br>
+
+This command does not perform access control. It assumes
+that this has already been done before.
+
+
+<br><br>
+<dt><a name="3"><b class='cmd'>Url_PostHook</b> <i class='arg'>sock length</i></a><dd>
+
+
+Backdoor hack for <b class='cmd'>Url_DecodeQuery</b> compatibility.  Remembers the
+current connection <i class='arg'>sock</i> and length of pending data so that
+
+<b class='cmd'>Url_DecodeQuery</b> can read the post data if it has not already
+been read by the time it is called. Setting a <i class='arg'>length</i> of 0
+deactivates the remembered information.
+
+</dl>
+
+
+<h2><a name="databasemanipulation">Database manipulation</a></h2>
+<p>
+<p>
+
+The commands in this section are for use by domain implementations, to
+manage their presence in the dispatcher database.
+
+<dl>
+
+<dt><a name="4"><b class='cmd'>Url_PrefixInstall</b> <i class='arg'>prefix command</i> (<i class='arg'>option value</i>)...</a><dd>
+
+
+Adds a domain described by the url <i class='arg'>prefix</i> to the database. After
+the call any access to an url in the domain will cause this package to
+call the associated domain handler, the command prefix <i class='arg'>command</i>.
+
+<br><br>
+
+The domain handler is called with one additional argument, the channel
+handle <strong>sock</strong> of the connection which made the request for an url
+in the domain. The state data of this connection is available through
+
+<p><table><tr><td bgcolor=black>&nbsp;</td><td><pre class='sample'>
+	upvar #0 Httpd$<strong>sock</strong>
+</pre></td></tr></table></p>
+
+as described in <strong>httpd</strong>.
+
+The allowed options and their meanings are:
+
+<br><br>
+<dl>
+<dt><strong>readpost</strong><dd>
+
+takes a boolean value. If set to <strong>true</strong> (the default), then this
+package will retrieve post data before calling the domain
+handler. Else the domain handler is responsible for reading any post
+data the browser might have sent.
+
+<br><br>
+<dt><strong>callback</strong><dd>
+
+takes a command prefix. It is invokes whenever a request in the domain
+was completed, with or without error. This allows the domain handler
+to cleanup any resources it might have allocated for the request at
+that time, like aborting a long running server operation.
+
+<br><br>
+
+The callback will be invoked with two additional arguments, <i class='arg'>sock</i>
+and a string, in this order. The string can be empty. If the string is
+not empty it will contain an error message.
+
+
+<br><br>
+<dt><strong>thread</strong><dd>
+
+takes a boolean value. If set to <strong>true</strong> the domain handler will
+run in its own thread. The default is <strong>false</strong>. In a server which
+is not thread-enabled this option will be ignored and the value always
+forced to <strong>false</strong>.
+
+</dl>
+
+
+<dt><a name="5"><b class='cmd'>Url_PrefixRemove</b> <i class='arg'>prefix</i></a><dd>
+
+
+Remove the domain described by the url <i class='arg'>prefix</i> from the
+database. After the call all urls in the domain may fall into a
+different domain and will be handled by that domain handler.  If they
+don't fall into a different domain they will cause the generation of
+http error replies when accessed from a browser.
+
+
+<br><br>
+<dt><a name="6"><b class='cmd'>Url_AccessInstall</b> <i class='arg'>proc</i></a><dd>
+
+
+Adds the command with name <i class='arg'>proc</i> at the end of the list of access
+control callback managed by the package. After the call the command
+will be invoked for all incoming requests. It can grant access, deny
+it, or announce that it doesn't care. When calling the command
+multiple times for the same <i class='arg'>proc</i> only the first call will update
+the package. All others will be ignored.
+
+<br><br>
+
+The register callback is invoked with two additional arguments, the
+channel handle of the connection, and the url which is accessed. It
+has to return one of
+
+<br><br>
+<dl>
+<dt><strong>ok</strong><dd>
+Access is granted.
+
+<br><br>
+<dt><strong>denied</strong><dd>
+
+Access is denied. It is recommended that the callback generates the
+appropriate http error reply. However the system will work even if it
+does not, by generating its own reply when it finds that the callback
+did not.
+
+<br><br>
+<dt><strong>return</strong><dd>
+See <strong>denied</strong>.
+
+<br><br>
+<dt><strong>skip</strong><dd>
+The callback does not care about this url.
+
+</dl>
+
+<br><br>
+
+The package invokes the callbacks from first registered to last and
+will not stop as long as the callbacks return <strong>skip</strong>. Any tcl
+error thrown by a callback wil cause url processing to abort.
+
+
+<br><br>
+<dt><a name="7"><b class='cmd'>Url_AccessInstallPrepend</b> <i class='arg'>proc</i></a><dd>
+
+
+See <b class='cmd'>Url_AccessInstall</b>, except that the command prefix is added
+at the front of the list, causing it to be called before anything else
+registered before.
+
+
+<br><br>
+<dt><a name="8"><b class='cmd'>Url_AccessUnInstall</b> <i class='arg'>proc</i></a><dd>
+
+
+Removes the command prefix <i class='arg'>proc</i> from the list of access control
+callbacks managed y the package. If the command prefix could not be
+found this command will do nothing.
+
+
+<br><br>
+<dt><a name="9"><b class='cmd'>Url_PrefixMatch</b> <i class='arg'>url prefixVar suffixVar</i></a><dd>
+
+
+Finds the best-matching domain for the <i class='arg'>url</i> and stores the url
+prefix of the domain into the variable <i class='arg'>prefixVar</i>, and the
+remainder of the url (i.e. everything after the prefix) into the
+variable <i class='arg'>suffixVar</i>.
+
+<br><br>
+
+The best-matching domain is the domain with the longest prefix which
+still matches the specified url, path-component wise. In other words,
+the prefix /tcl will <em>not</em> match the url /tclhttpd/foo.
+
+
+<br><br>
+<dt><a name="10"><b class='cmd'>Url_PrefixExists</b> <i class='arg'>prefix</i></a><dd>
+
+
+Checks if a domain was registerd for <i class='arg'>prefix</i>. The result is a
+boolean value where <strong>true</strong> signals that a domain was registered
+indeed.
+
+<br><br>
+<dt><a name="11"><b class='cmd'>Url_Handle</b> <i class='arg'>cmd sock</i></a><dd>
+
+
+This used to cache the domain handler command <i class='arg'>cmd</i> for the url on
+the connection <i class='arg'>sock</i> before invoking it. Nowadays it only invokes
+the command.
+
+<br><br>
+<dt><a name="12"><b class='cmd'>Url_UnCache</b> <i class='arg'>sock</i> ?<i class='arg'>force</i>?</a><dd>
+
+
+Removes the domain handler command for the url on the connection
+<i class='arg'>sock</i> from the domain handler cache. If the argument <i class='arg'>force</i>
+is present and set then there will be no special case for the internal
+redirect hack.
+
+</dl>
+
+
+
+
+<h2><a name="supportfordomainhandlers">Support for domain handlers</a></h2>
+<p>
+<p>
+
+The commands of this section are for use by domain implementations, to
+aid the tasks of url and request processing.
+
+<dl>
+
+<dt><a name="13"><b class='cmd'>Url_Unwind</b> <i class='arg'>sock ei ec</i></a><dd>
+
+
+Performs common error handling after the current request on the
+connection <i class='arg'>sock</i> was aborted with a tcl error. The two arguments
+<i class='arg'>ei</i> and <i class='arg'>ec</i> contain the errorInfo and errorCode information
+from the interpreter.
+
+
+<br><br>
+<dt><a name="14"><b class='cmd'>Url_PathCheck</b> <i class='arg'>urlsuffix</i></a><dd>
+
+
+Validates the pathname <i class='arg'>urlsuffix</i> and makes sure that it doesn't
+sneak out of its domain via <strong>..</strong>-trickery. Either raises an
+error, or returns a list of components in the pathname.
+
+
+<br><br>
+<dt><a name="15"><b class='cmd'>Url_DecodeQuery</b> <i class='arg'>query</i> (<i class='arg'>option</i> <i class='arg'>value</i>)...</a><dd>
+
+
+A small wrapper around <b class='cmd'>Url_DecodeQueryOnly</b>. Ensures that the
+POST data on the connection set via <b class='cmd'>Url_PostHook</b> is read before
+handing over to the decoder. <i class='arg'>query</i> is the name of the internal
+variable the data is stored into. The options coming after this
+information are simply handed over to the actual decoder, i.e.
+<b class='cmd'>Url_DecodeQueryOnly</b>.
+
+Accepted options:
+
+<br><br>
+<dl>
+<dt><strong>type</strong><dd>
+
+Forces a specific type for the query data. Defaults to
+<strong>application/x-www-urlencoded</strong>. If no decoder for that type is
+present the system is forced back to the default.
+
+<br><br>
+<dt><strong>qualifiers</strong><dd>
+
+Empty by default. Transformed into the second argument of the type
+specific decoders, see below.
+
+</dl>
+
+<dt><a name="16"><b class='cmd'>Url_DecodeQueryOnly</b> <i class='arg'>query</i> (<i class='arg'>option</i> <i class='arg'>value</i>)...</a><dd>
+
+
+Decodes the POST data stored in the variable <i class='arg'>query</i>.  It does
+this by dispatching to the appropriate type-specific decoder command
+(see below). See <b class='cmd'>Url_DecodeQuery</b> for the accepted options.
+
+
+<br><br>
+<dt><a name="17"><b class='cmd'>Url_DecodeQuery_multipart/form-data</b> <i class='arg'>query qualifiers</i></a><dd>
+
+
+Decoder for <i class='arg'>query</i> data of type <strong>multipart/form-data</strong>.
+Essentially has to parse the MIME document in <i class='arg'>query</i>, with
+guidance by the dictionary <i class='arg'>qualifiers</i>.
+
+Used keys are
+
+<br><br>
+<dl>
+<dt><strong>boundary</strong><dd>
+The boundary line used to separate the MIME parts. Required.
+</dl>
+
+Returns a dictionary mapping from the names of the uploaded files
+to their contents.
+
+<br><br>
+<dt><a name="18"><b class='cmd'>Url_DecodeQuery_application/x-www-urlencoded</b> <i class='arg'>query qualifiers</i></a><dd>
+
+
+Decoder for <strong>application/x-www-urlencoded</strong> <i class='arg'>query</i> data.
+The argument <i class='arg'>qualifiers</i> is not used. Returns a dictionary
+mapping from the query keys to the query values.
+
+<br><br>
+<dt><a name="19"><b class='cmd'>Url_DecodeQuery_application/x-www-form-urlencoded</b> <i class='arg'>query qualifiers</i></a><dd>
+
+
+Decoder for <strong>application/x-www-form-urlencoded</strong> <i class='arg'>query</i>
+data. An alias of <b class='cmd'>Url_DecodeQuery_application/x-www-urlencoded</b>.
+
+
+<br><br>
+<dt><a name="20"><b class='cmd'>Url_QuerySetup</b> <i class='arg'>sock</i></a><dd>
+
+
+Reads the POST data on the connection <i class='arg'>sock</i> and initializes the
+<strong>ncgi</strong> package with it, for convenient access by URL
+implementations later on.
+
+
+<br><br>
+<dt><a name="21"><b class='cmd'>Url_ReadPost</b> <i class='arg'>sock varname</i></a><dd>
+
+
+Synchronously reads the POST data on the connection <i class='arg'>sock</i> and
+stores it into the variable <i class='arg'>varname</i>.
+
+
+<br><br>
+<dt><a name="22"><b class='cmd'>Url_DecodeMIMEField</b> <i class='arg'>type</i></a><dd>
+
+
+Decodes a mime type. Returns a list containing 3 elements, the major
+and minor type, and its qualifiers, a dictionary, in this order.
+
+
+<br><br>
+<dt><a name="23"><b class='cmd'>Url_Decode</b> <i class='arg'>data</i></a><dd>
+
+
+Decodes a single string in <strong>x-www-urlencoded</strong> form.
+The decoded string is returned as the result of the command.
+
+
+<br><br>
+<dt><a name="24"><b class='cmd'>Url_Encode</b> <i class='arg'>string</i></a><dd>
+
+
+Encodes a <i class='arg'>string</i> for use in <strong>x-www-urlencoded</strong> query data.  The
+encoded string is returned as the result of the command.
+
+
+<br><br>
+<dt><a name="25"><b class='cmd'>Url_IsLinkToSelf</b> <i class='arg'>url</i></a><dd>
+
+
+Compares the <i class='arg'>url</i> to the url of the current page.
+The result of the comparison is a boolean flag.
+If they seem to be the same <strong>true</strong> will be returned, else
+<strong>false</strong>.
+
+
+</dl>
+
+
+
+
+<h2><a name="seealso">SEE ALSO</a></h2>
+<p>
+httpd, httpd::counter, httpd::doc_error, httpd::threadmgr, httpd::utils
+<h2><a name="keywords">KEYWORDS</a></h2>
+<p>
+domain, url, url dispatch, web server
+<h2><a name="copyright">COPYRIGHT</a></h2>
+<p>
+Copyright &copy; 2003 Andreas Kupries &lt;andreas_kupries@users.sourceforge.net&gt;<br>
+</body></html>
+
