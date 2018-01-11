@@ -1,5 +1,20 @@
 # tclhttpd-websocket
 
+# How to Run ?
+Navigate to `bin` directory and execute the following command
+
+`tclsh httpd.tcl -port 8016`
+
+Here, `-port` is an optional field. The port number is defaulted to `8015`
+
+
+Then open the following link in web browser which supports `WebSockets` (like latest version of Chrome or Firefox)
+
+http://localhost:8016/websocket2.html 
+
+Now, you can connect with the server and send some text message to it and the server will simply echo it back to the client. 
+
+# History
 
 I have asked a question about implementing websockets with web-browser being a websocket client and 
 Tcl being a websocket server in stackoverflow (https://stackoverflow.com/questions/48128997/tcl-server-with-websocket-client-on-browser)
