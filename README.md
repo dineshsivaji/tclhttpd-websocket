@@ -32,3 +32,8 @@ The Tcl8.5 version has support for unsigned numbers by adding character **u** in
 For ```binary scan```, I have used `bscan` procedure which is taken from http://wiki.tcl.tk/4180. 
 For ```binary format```, I have changed the format specifier, ```u``` to ```*```. 
 
+# Credits : 
+
+  Mr.Jeff Smith
+  
+  Mr. Donal Fellows
