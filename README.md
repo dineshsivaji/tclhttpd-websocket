@@ -34,6 +34,6 @@ For ```binary format```, I have changed the format specifier, ```u``` to ```*```
 
 # Credits : 
 
-  Mr.Jeff Smith
+  [Mr.Jeff Smith](http://wiki.tcl.tk/6132)
   
-  Mr.Donal Fellows
+  [Mr.Donal Fellows](http://wiki.tcl.tk/73)
